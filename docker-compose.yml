@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  django:
+    container_name: django_server
+    image: server
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - default.env
+    ports:
+      - '8000:8000'
+    networks:
+      - django_server
+      - postgres_database
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./project/recipes/templates/recipes:/project/recipes/templates/recipes
+      - ./project/users/templates/users:/project/users/templates/users
+  postgres:
+    container_name: postgres_database
+    image: postgres:16.2
+    env_file:
+      - default.env
+    networks:
+      - django_server
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      interval: 20s
+      timeout: 20s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+volumes:
+  postgres-data:
+    external: true
+networks:
+  django_server:
+  postgres_database:
